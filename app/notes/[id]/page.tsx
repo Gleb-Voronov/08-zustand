@@ -3,51 +3,39 @@ import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query
 import NoteDetailsClient from './NoteDetails.client';
 import type { Metadata } from 'next';
 
-type NoteDetailsProps = {
-  params: { id: string }; 
+type Props = {
+  params: { id: string };
 };
 
-export async function generateMetadata({ params }: NoteDetailsProps): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const note = await fetchNoteById(Number(params.id));
-
-  const title = `${note.title} | NoteHub`;
-  const description = note.content.length > 100
-    ? note.content.slice(0, 100) + '...'
-    : note.content;
-
   return {
-    title,
-    description,
+    title: note.title,
+    description: note.content,
     openGraph: {
-      title,
-      description,
+      title: note.title,
+      description: note.content,
       url: `https://notehub.vercel.app/notes/${params.id}`,
-      images: [
-        {
-          url: 'https://ac.goit.global/fullstack/react/notehub-og-meta.jpg',
-          width: 1200,
-          height: 630,
-          alt: 'NoteHub Note Image',
-        },
-      ],
+      images: [{
+        url: 'https://ac.goit.global/fullstack/react/notehub-og-meta.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Note Image',
+      }],
     },
   };
-} 
-const NoteDetails = async ({ params }: NoteDetailsProps) => {
+}
+
+const NoteDetails = async ({ params }: Props) => {
   const queryClient = new QueryClient();
-  const response = await params;
-
   await queryClient.prefetchQuery({
-    queryKey: ['note', response.id],
-    queryFn: () => fetchNoteById(Number(response.id)),
+    queryKey: ['note', params.id],
+    queryFn: () => fetchNoteById(Number(params.id)),
   });
-
   return (
-    <div>
-      <HydrationBoundary state={dehydrate(queryClient)}>
-        <NoteDetailsClient />
-      </HydrationBoundary>
-    </div>
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <NoteDetailsClient />
+    </HydrationBoundary>
   );
 };
 
