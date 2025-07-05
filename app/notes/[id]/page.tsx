@@ -1,37 +1,50 @@
 import { fetchNoteById } from '@/lib/api';
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
 import NoteDetailsClient from './NoteDetails.client';
-import type { Metadata } from 'next';
+
 
 type Props = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const note = await fetchNoteById(Number(params.id));
+export async function generateMetadata({ params }: Props) {
+  const { id } = await params;
+  const { title, content, tag } = await fetchNoteById(Number(id));
+
   return {
-    title: note.title,
-    description: note.content,
+    title: title,
+    description: `${tag}: ${content.slice(0, 30)}...`,
     openGraph: {
-      title: note.title,
-      description: note.content,
-      url: `https://notehub.vercel.app/notes/${params.id}`,
-      images: [{
-        url: 'https://ac.goit.global/fullstack/react/notehub-og-meta.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'Note Image',
-      }],
+      title: title,
+      description: `${tag}: ${content.slice(0, 30)}...`,
+      url: `https://08-zustand-zeta.vercel.app/notes/filter/${id}`,
+      images: [
+        {
+          url: '/notehub-og-meta',
+          width: 1200,
+          height: 630,
+          alt: 'NoteHub styling card',
+        },
+        {
+          url: 'https://ac.goit.global/fullstack/react/notehub-og-meta.jpg',
+          width: 1200,
+          height: 630,
+          alt: 'NoteHub styling card',
+        },
+      ],
     },
   };
 }
 
 const NoteDetails = async ({ params }: Props) => {
+  const resolvedParams = await params;
   const queryClient = new QueryClient();
+
   await queryClient.prefetchQuery({
-    queryKey: ['note', params.id],
-    queryFn: () => fetchNoteById(Number(params.id)),
+    queryKey: ['note', resolvedParams.id],
+    queryFn: () => fetchNoteById(Number(resolvedParams.id)),
   });
+
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <NoteDetailsClient />
